@@ -46,10 +46,12 @@ func main() {
 					},
 					&cli.Uint64Flag{
 						Name:     "dcount",
+						Aliases:  []string{"d"},
 						Required: true,
 					},
 					&cli.Uint64Flag{
 						Name:     "tcount",
+						Aliases:  []string{"t"},
 						Required: true,
 					},
 				},
@@ -86,10 +88,12 @@ func main() {
 					},
 					&cli.Uint64Flag{
 						Name:     "dcount",
+						Aliases:  []string{"d"},
 						Required: true,
 					},
 					&cli.Uint64Flag{
 						Name:     "tcount",
+						Aliases:  []string{"t"},
 						Required: true,
 					},
 				},
