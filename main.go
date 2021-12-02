@@ -11,6 +11,29 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+var (
+	ShardFlags = []cli.Flag{
+		&cli.StringFlag{
+			Name:    "string",
+			Aliases: []string{"s"},
+		},
+		&cli.Uint64Flag{
+			Name:    "int",
+			Aliases: []string{"i"},
+		},
+		&cli.Uint64Flag{
+			Name:     "dbcount",
+			Aliases:  []string{"d"},
+			Required: true,
+		},
+		&cli.Uint64Flag{
+			Name:     "tabcount",
+			Aliases:  []string{"t"},
+			Required: true,
+		},
+	}
+)
+
 func main() {
 	app := &cli.App{
 		Name:  "DB Tool",
@@ -34,27 +57,8 @@ func main() {
 			{
 				Name:    "modshard",
 				Aliases: []string{"mshard"},
-				Usage:   "Get table name by sharding key. Crc for string",
-				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:    "string",
-						Aliases: []string{"s"},
-					},
-					&cli.Uint64Flag{
-						Name:    "int",
-						Aliases: []string{"i"},
-					},
-					&cli.Uint64Flag{
-						Name:     "dcount",
-						Aliases:  []string{"d"},
-						Required: true,
-					},
-					&cli.Uint64Flag{
-						Name:     "tcount",
-						Aliases:  []string{"t"},
-						Required: true,
-					},
-				},
+				Usage:   "Get table name by sharding key. Crc32 for string",
+				Flags:   ShardFlags,
 				Action: func(c *cli.Context) error {
 					var key uint64
 					switch {
@@ -63,11 +67,10 @@ func main() {
 					case c.IsSet("int"):
 						key = c.Uint64("int")
 					}
-					dcount := c.Uint64("dcount")
-					tcount := c.Uint64("tcount")
+					dbcount := c.Uint64("dbcount")
+					tabcount := c.Uint64("tabcount")
 
-					tshard := key % tcount
-					dshard := tshard / (tcount / dcount)
+					tshard, dshard := Shard(key, dbcount, tabcount)
 
 					fmt.Printf("DB: %08d. Table: %08d\n", dshard, tshard)
 					return nil
@@ -77,26 +80,7 @@ func main() {
 				Name:    "crcshard",
 				Aliases: []string{"cshard"},
 				Usage:   "Get table name by sharding key. Crc32 everything",
-				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:    "string",
-						Aliases: []string{"s"},
-					},
-					&cli.Uint64Flag{
-						Name:    "int",
-						Aliases: []string{"i"},
-					},
-					&cli.Uint64Flag{
-						Name:     "dcount",
-						Aliases:  []string{"d"},
-						Required: true,
-					},
-					&cli.Uint64Flag{
-						Name:     "tcount",
-						Aliases:  []string{"t"},
-						Required: true,
-					},
-				},
+				Flags:   ShardFlags,
 				Action: func(c *cli.Context) error {
 					var key uint64
 					switch {
@@ -105,11 +89,10 @@ func main() {
 					case c.IsSet("int"):
 						key = ICrc32(c.Uint64("int"))
 					}
-					dcount := c.Uint64("dcount")
-					tcount := c.Uint64("tcount")
+					dbcount := c.Uint64("dbcount")
+					tabcount := c.Uint64("tabcount")
 
-					tshard := key % tcount
-					dshard := tshard / (tcount / dcount)
+					tshard, dshard := Shard(key, dbcount, tabcount)
 
 					fmt.Printf("DB: %08d. Table: %08d\n", dshard, tshard)
 					return nil
@@ -122,6 +105,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func Shard(key, dbcount, tabcount uint64) (uint64, uint64) {
+	tshard := key % tabcount
+	dshard := tshard / (tabcount / dbcount)
+	return tshard, dshard
 }
 
 func SCrc32(key string) uint64 {
